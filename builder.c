@@ -3,6 +3,23 @@
 #include "parameters.h"
 #include "LibDisk.h"
 
+int BuildMetadataBlocks()
+{
+    if (BuildSuperBlock() == -1)
+    {
+        osErrno = E_GENERAL;
+        return -1;
+    }
+
+    if (BuildBitmapBlocks() == -1)
+    {
+        osErrno = E_GENERAL;
+        return -1;
+    }
+
+    return 0;
+}
+
 int BuildSuperBlock()
 {
 
@@ -10,7 +27,7 @@ int BuildSuperBlock()
     char* superBlock;
     superBlock = calloc(sizeof(char), SECTOR_SIZE); 
 
-    // check wheather memory allocated or not ...
+    // check whether memory is allocated or not ...
     if(superBlock == NULL)
     {
         // Can't allocated memory for superBlock ...
@@ -28,7 +45,7 @@ int BuildSuperBlock()
     Disk_Write(SUPER_BLOCK_INDEX, superBlock); 
     free(superBlock);
 
-    // Check weather disk wrote superBlock...
+    // Check whether disk wrote superBlock...
     if(diskErrno == E_MEM_OP)
     {
         // Disk couldn't write superBlock
@@ -39,8 +56,13 @@ int BuildSuperBlock()
     return 0;
 }
 
-int BuildBitmapBlock(char* bitmapBlock)
+int BuildBitmapBlocks()
 {
+    // allocated memory size of sector
+    char* inodeBitmap;
+    inodeBitmap = calloc(sizeof(char), SECTOR_SIZE);
+
+    free(inodeBitmap);
 
     return 0;
 }
