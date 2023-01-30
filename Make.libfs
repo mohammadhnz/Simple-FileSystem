@@ -5,9 +5,9 @@ INCS   =
 LIBS   = 
 
 # files we need
-SRCS   = LibDisk.c 
+SRCS   = LibFS.c 
 OBJS   = $(SRCS:.c=.o)
-TARGET = libDisk.so
+TARGET = libFS.so
 
 all: $(TARGET)
 
