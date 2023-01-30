@@ -1,6 +1,10 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
+#ifndef min
+    #define min(a,b) ((a) < (b) ? (a) : (b))
+#endif
+
 extern char MAGIC_NUMBER_0;    //This one and three below are some magic number that stored in super block to distinguish it from other disks
 extern char MAGIC_NUMBER_1;
 extern char MAGIC_NUMBER_2;
@@ -26,18 +30,29 @@ extern int OPEN_FILE_NUM_MAX;       //Maximum number of open files. It is used f
 extern int FILE_NUM_MAX;            //Maximum number of files that a file system can hold
 
 extern int INODE_BITMAP_BLOCK_NUM;
-extern int INODE_BLOCK_NUM;         //Number of inode blocks!!!
-extern int INODE_BYTEMAP_LENGTH;    //It is 250
-extern int INODE_FIRST_BLOCK_INDEX; //This shows the index of first block which inodes are stored in it
-extern int INODE_PER_BLOCK_NUM;     //Number of inode per block!!!
-extern int INODE_SIZE;              //Size of each inode in a block
+extern int INODE_FIRST_BITMAP_BLOCK_INDEX;  //Index of bitmap
+extern int INODE_BLOCK_NUM;                 //Number of inode blocks!!!
+extern int INODE_BYTEMAP_LENGTH;            //It is 250
+extern int INODE_FIRST_BLOCK_INDEX;         //This shows the index of first block which inodes are stored in it
+extern int INODE_PER_BLOCK_NUM;             //Number of inode per block!!!
+extern int INODE_SIZE;                      //Size of each inode in a block
 
 extern int DATA_BITMAP_BLOCK_NUM;
 extern int DATA_BLOCK_NUM;              //Number of data blocks!!!
-extern int DATA_BLOCK_BYTEMAP_LENGTH;   //Actually it is 1218.125 means 9745/8 because it is Bytemap
+extern int DATA_BITMAP_BLOCK_LENGTH;   //Actually it is 1218.125 means 9745/8 because it is Bytemap
 extern int DATA_FIRST_BLOCK_INDEX;      //This shows the index of first block which datas are stored in it
 extern int DATA_BLOCK_PER_CHAR_NUM;
 
 extern int NULL_TERM;   //Null Terminator
+
+extern char BIT_0;       //is 0x01
+extern char BIT_1;       //is 0x02
+extern char BIT_2;       //is 0x04
+extern char BIT_3;       //is 0x08
+extern char BIT_4;       //is 0x10
+extern char BIT_5;       //is 0x20
+extern char BIT_6;       //is 0x40
+extern char BIT_7;       //is 0x80
+
 
 #endif // PARAMETERS_H
