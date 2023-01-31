@@ -40,8 +40,14 @@ int FS_Boot(char *path)
         }
 
         // do all of the other stuff needed...
-        if (BuildMetadataBlocks() == -1) {
+        if (BuildMetadataBlocks() == -1)
+        {
             osErrno = E_GENERAL;
+        }
+        else if(CreateFileTable() == -1)
+        {
+            osErrno = E_GENERAL;
+            return -1;
         }
     }
     else
@@ -49,6 +55,11 @@ int FS_Boot(char *path)
         // check for magic number of block
         // handling errors
         if (CheckFileSystemSuperBlock() == -1)
+        {
+            osErrno = E_GENERAL;
+            return -1;
+        }
+        else if (CreateFileTable() == -1)
         {
             osErrno = E_GENERAL;
             return -1;
@@ -198,6 +209,11 @@ int Dir_Read(char *path, void *buffer, int size)
     char* array[128];
     char myPath[256];
 
+    if(size < Dir_Size(path))
+    {
+        osErrno = E_BUFFER_TOO_SMALL;
+        return -1;
+    }
     // make a copy of path to modify
     strcpy(myPath, path);
 
@@ -219,7 +235,6 @@ int Dir_Read(char *path, void *buffer, int size)
 int Dir_Unlink(char *path)
 {
     printf("Dir_Unlink\n");
-    Disk_Save("disk1.txt");
 
     // allocate memory for storing string...
     char* array[128];
@@ -242,7 +257,7 @@ int Dir_Unlink(char *path)
 
 
     int DataBlocksOccupied[30];
-    int j = DataBlocksOccupiedByInode(current, DataBlocksOccupied);
+    int j = DataBlocksOccupiedByDirectory(current, DataBlocksOccupied);
 
     for (i = 0; i < j; i++)
     {
@@ -250,8 +265,6 @@ int Dir_Unlink(char *path)
     }
 
     ChangeInodeBitmapStatus(current, AVAILIBLE);
-
-    Disk_Save("disk2.txt");
 
     return 0;
 }
