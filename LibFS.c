@@ -121,13 +121,38 @@ int Dir_Create(char *path)
     // tokenize path and make array of path elements...
     int i = BreakPathName(myPath, array);
 
-    addDirectory(myPath, array, i);
+    if(addDirectory(myPath, array, i) != 0)
+    {
+        osErrno = E_CREATE;
+        return -1;
+    }
 
     return 0;
 }
 
 int Dir_Size(char *path)
 {
+    // allocate memory for storing string...
+    char* array[128];
+    char myPath[256];
+
+    // make a copy of path to modify
+    strcpy(myPath, path);
+
+    // tokenize path and make array of path elements...
+    int i = BreakPathName(myPath, array);
+
+    int parent;
+    int current;
+
+    if(findLeafInodeNumber(myPath, array, i, &parent, &current, 0) != 0)
+        return -1;
+    int size = DirSizeFromInode(current);
+
+    printf("Parent : %d \t Current : %d\n", parent, current);
+    printf("Size : %d\n", size);
+
+
     printf("Dir_Size\n");
     return 0;
 }

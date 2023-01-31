@@ -21,14 +21,19 @@ int main(int argc, char *argv[])
     printf("Starting filesystem\n");
     FS_Boot(path);
     Dir_Create("/alireza");
-    Dir_Create("/gholi");
+    Dir_Create("/alireza/lotfi");
+    Dir_Create("/alireza/lotfi/sholi");
+    Dir_Create("/alireza/lotfi/sholi/test");
+    Dir_Create("/alireza/lotfi/sholi/test/test");
+    Dir_Create("/alireza/lotfi/sholi/test2");
+        Dir_Create("/alireza/lotfi/sholi/test3");
+            Dir_Create("/alireza/lotfi/sholi/test4");
+                Dir_Create("/alireza/lotfi/sholi/test5");
+                    Dir_Create("/alireza/lotfi/sholi/test6");
+    Dir_Create("/alireza/lotfi/sholi/test/test2");
+    Dir_Size("/alireza/lotfi/sholi/test/test2");
+    Dir_Size("/alireza/lotfi/sholi");
     FS_Sync();
-    
-    int output=0;
-    int error=0;
-    error=searchPathInInode(0,"ghol",&output);
-    printf("error=%d\noutput=%d\n",error,output);
-    
     return 0;
 }
 
