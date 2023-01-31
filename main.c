@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "LibFS.h"
+#include "directory.h"
 
 void usage(char *prog)
 {
@@ -19,8 +20,15 @@ int main(int argc, char *argv[])
 
     printf("Starting filesystem\n");
     FS_Boot(path);
-    Dir_Create("/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p");
+    Dir_Create("/alireza");
+    Dir_Create("/gholi");
     FS_Sync();
+    
+    int output=0;
+    int error=0;
+    error=searchPathInInode(0,"ghol",&output);
+    printf("error=%d\noutput=%d\n",error,output);
+    
     return 0;
 }
 

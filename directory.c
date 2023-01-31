@@ -64,6 +64,9 @@ int  BreakPathName(char *pathName, char **arrayOfBreakPathName)
     return index;
 }
 
+// return -2 if there is no space to store dirEntry
+// return -1 if there is no space to store terminator
+// return 0 if the file stored successfully
 int addDirectoryEntryOnSector(char* dataBlock, DirectoryEntry *dirEntry)
 {
     int i;
@@ -90,7 +93,99 @@ int addDirectoryEntryOnSector(char* dataBlock, DirectoryEntry *dirEntry)
 
 int addDirectoryEntry(int inodeNum, DirectoryEntry *dirEntry)
 {
+    printf("TEST#");
+    int i = 0;
 
+    // allocate memory of a sector block for datablock
+    char * dataBlock = calloc(sizeof(char), SECTOR_SIZE);
+
+    // allocate memory of a sector block for inode block
+    char * inodeBlock = calloc(sizeof(char), SECTOR_SIZE);
+
+
+    // Try to read inode block from disk....
+    if ( Disk_Read(inodeNum + INODE_FIRST_BLOCK_INDEX, inodeBlock) == -1)
+    {
+        printf("Faild to read inode block %d from disk\n", inodeNum);
+        free(dataBlock);
+        free(inodeBlock);
+        return -1;
+    }
+
+    for( i = 0; i < SECTOR_PER_FILE_MAX; i++)
+    {
+        // Try to append dirEntry to data part...
+        int dataBlockIndex = inodeBlock[8+i*4];
+        if(Disk_Read(dataBlockIndex + DATA_FIRST_BLOCK_INDEX , dataBlock) == -1)
+        {
+            printf("Faild to read data block %d from disk\n", dataBlockIndex);
+            free(dataBlock);
+            free(inodeBlock);
+            return -1;
+        }
+
+        int res = addDirectoryEntryOnSector(dataBlock, dirEntry);
+
+
+        if(res == 0)        // dirEntry entered successfully
+        {
+            Disk_Write(dataBlockIndex + DATA_FIRST_BLOCK_INDEX, dataBlock);
+            free(dataBlock);
+            free(inodeBlock);
+            return 0;
+        }
+        else if(res == -1)  // There is no space to add terminator
+            break;
+    }
+
+    // check if there is space in directory to store more files
+    if(i == SECTOR_SIZE)
+    {
+        printf("No space to add more directory or file to directory #%d\n", inodeNum);
+        free(dataBlock);
+        free(inodeBlock);
+        return -1;
+    }
+
+    // allocate a new free data block to inode
+    int k = FindNextAvailableDataBlock();
+    ChangeDataBitmapStatus(k, OCCUPIED);
+
+    if(Disk_Read(k + DATA_FIRST_BLOCK_INDEX, dataBlock) == -1)
+    {
+        printf("Faild to read data block %d from disk\n", k);
+        free(dataBlock);
+        free(inodeBlock);
+        return -1;
+    }
+
+    addDirectoryEntryOnSector(dataBlock, dirEntry);
+    Disk_Write(k, dataBlock);
+
+    free(dataBlock);
+    free(inodeBlock);
+    return 0;
+    
+}
+
+int addDirectory(char* pathName, char **arrayOfBreakPathName, int index)
+{
+    printf("index : %d", index);
+    if(index == 1)
+    {
+        DirectoryEntry *dirEntry = (DirectoryEntry *) malloc ( sizeof(DirectoryEntry));
+
+        int inodeIndex = FindNextAvailableInodeBlock();
+        ChangeInodeBitmapStatus(inodeIndex, OCCUPIED);
+
+        int dataIndex = FindNextAvailableDataBlock();
+        ChangeDataBitmapStatus(dataIndex, OCCUPIED);
+
+        strcpy(dirEntry->pathName, arrayOfBreakPathName[0]);
+        dirEntry->inodePointer = inodeIndex;
+
+        addDirectoryEntry(0, dirEntry);
+    }
 }
 
 
@@ -99,14 +194,12 @@ int addDirectoryEntry(int inodeNum, DirectoryEntry *dirEntry)
 //return -1 if inode is not directory
 int searchPathInInode ( int inodeNumber , char* search , int* outputInodeNumber)
 {
-    char* sectorOfInodeBuffer=calloc(sizeof(char),SECTOR_SIZE)
+    char* sectorOfInodeBuffer=calloc(sizeof(char),SECTOR_SIZE);
     char* inodeBuffer=calloc(sizeof(char),INODE_SIZE);
     char* inodeSegmentPointerToSector =calloc(sizeof(char),sizeof(int));
     char* sectorBuffer=calloc(sizeof(char),SECTOR_SIZE);
-    char* direcoryEntry=calloc(sizeof(char),DIRECTORY_LENGTH);
+    char* directoryEntry=calloc(sizeof(char),DIRECTORY_LENGTH);
     char directoryEntryNumberInString[sizeof(int)];
-
-    
     
     DirectoryEntry directoryEntryTemp;
     int sectorOfInodeNumber=inodeNumber/INODE_PER_BLOCK_NUM;
@@ -122,12 +215,12 @@ int searchPathInInode ( int inodeNumber , char* search , int* outputInodeNumber)
         free(inodeBuffer);
         free(inodeSegmentPointerToSector);
         free(sectorBuffer);
-        free(direcoryEntry);
+        free(directoryEntry);
         return -1;
     }
     
     //Copy appropriate inode from sector into inodeBuffer
-    memcpy((void*)sectorOfInodeBuffer+INODE_SIZE*inodeIndexInSector,(void*)inodeBuffer,INODE_SIZE);
+    memcpy((void*)inodeBuffer,(void*)sectorOfInodeBuffer+INODE_SIZE*inodeIndexInSector,INODE_SIZE);
     
     // Check that inode is Directory  FILE_ID=0x80 , DIRECORY_ID=0x00
     if (inodeBuffer[0] & FILE_ID)
@@ -137,7 +230,7 @@ int searchPathInInode ( int inodeNumber , char* search , int* outputInodeNumber)
         free(inodeBuffer);
         free(inodeSegmentPointerToSector);
         free(sectorBuffer);
-        free(direcoryEntry);
+        free(directoryEntry);
         return -1;
     }
     
@@ -145,7 +238,7 @@ int searchPathInInode ( int inodeNumber , char* search , int* outputInodeNumber)
     for (i=0;i<SECTOR_PER_FILE_MAX;i++)
     {
         //find sector number
-        inodeSegmentPointerToSector=memcpy((void*)inodeBuffer+META_DATA_PER_INODE_BYTE_NUM+i*sizeof(int),(void*)inodePointerToSectorNumber,sizeof(int));
+        memcpy((void*)inodeSegmentPointerToSector,(void*)inodeBuffer+META_DATA_PER_INODE_BYTE_NUM+i*sizeof(int),sizeof(int));
         inodePointerToSectorNumber=StringToInt(inodeSegmentPointerToSector);
         
         //read the appropriate sector and write in sectorBuffer
@@ -156,36 +249,39 @@ int searchPathInInode ( int inodeNumber , char* search , int* outputInodeNumber)
             free(inodeBuffer);
             free(inodeSegmentPointerToSector);
             free(sectorBuffer);
-            free(direcoryEntry);
+            free(directoryEntry);
             return -1;
         }
         
         //create directoryEntry
         //check every entry if it is match with search word
         for (j=0; j<(SECTOR_SIZE)/DIRECTORY_LENGTH; j++) {
-            memcpy(sectorBuffer+sizeof(int)+j*DIRECTORY_LENGTH,directoryEntryTemp.pathName,PATH_LENGTH_MAX);
-            memcpy(sectorBuffer+j*DIRECTORY_LENGTH,directoryEntryNumberInString,sizeof(int));
+            memcpy(directoryEntryTemp.pathName,sectorBuffer+sizeof(int)+j*DIRECTORY_LENGTH,PATH_LENGTH_MAX);
+            memcpy(directoryEntryNumberInString,sectorBuffer+j*DIRECTORY_LENGTH,sizeof(int));
+            printBlockHex(directoryEntryNumberInString,sizeof(int));
             directoryEntryTemp.inodePointer=StringToInt(directoryEntryNumberInString);
+            //directoryEntryTemp.inodePointer=sectorBuffer+j*DIRECTORY_LENGTH;
             
-            if(strcmp(directoryEntryTemp.pathName,"\0")==0)
+            if(strcmp(directoryEntryTemp.pathName,"")==0)
             {
                 printf("No directory Find\n");
                 free(sectorOfInodeBuffer);
                 free(inodeBuffer);
                 free(inodeSegmentPointerToSector);
                 free(sectorBuffer);
-                free(direcoryEntry);
+                free(directoryEntry);
                 return -1;
             }
             
             if(strcmp(search, directoryEntryTemp.pathName)==0)
             {
+                printf("i=%d,j=%d\n",i,j);
                 *outputInodeNumber=directoryEntryTemp.inodePointer;
                 free(sectorOfInodeBuffer);
                 free(inodeBuffer);
                 free(inodeSegmentPointerToSector);
                 free(sectorBuffer);
-                free(direcoryEntry);
+                free(directoryEntry);
                 return 0;
             }
         }
@@ -196,18 +292,16 @@ int searchPathInInode ( int inodeNumber , char* search , int* outputInodeNumber)
     free(inodeBuffer);
     free(inodeSegmentPointerToSector);
     free(sectorBuffer);
-    free(direcoryEntry);
+    free(directoryEntry);
     return -1;
 }
 
 
-int StringToInt (char* numberInStringType){
-    int num=0;
-    while(*numberInStringType)
-    {
-        num=((*numberInStringType)-'0')+num*2;
-        numberInStringType++;
-    }
-    return num;
+int StringToInt (char* binaryCharArray){
+    int result=binaryCharArray[0];
+    result=binaryCharArray[1]<<8 | result;
+    result=binaryCharArray[2]<<16 | result;
+    result=binaryCharArray[3]<<24 | result;
+    return result;
 }
 
