@@ -329,15 +329,16 @@ int findLeafInodeNumber(char *path, char** array, int index, int *parent, int *c
         *parent = *current;
         if(searchPathInInode(*parent, array[i], current) != 0)
         {
-           // printf("SearchPathInInode(%d, %s) --> %d\n", *parent, array[i], *current);
+            printf("SearchPathInInode(%d, %s) --> %d\n", *parent, array[i], *current);
             break;
         }
-       // printf("SearchPathInInode(%d, %s) --> %d\n", *parent, array[i], *current);
+        printf("SearchPathInInode(%d, %s) --> %d\n", *parent, array[i], *current);
     }
 
 
     if(index - i != step )
     {
+        printf("%d %d", index, i);
         printf("Cant find parents of directory you want\n");
         return -1;
     }
@@ -603,6 +604,13 @@ int DeleteEntryFromDirectory(int inodeNumber , int inodeSearch )
                 if( Disk_Write(DATA_FIRST_BLOCK_INDEX + inodePointerToSectorNumber, sectorBuffer) == -1)
                 {
                     printf("Disk failed to write changed block\n");
+                    free(inodeBuffer);
+                    free(inodeSegmentPointerToSector);
+                    free(sectorBuffer);
+                    free(inodeSegmentPointerToNextSector);
+                    free(nextSectorBuffer);
+                    free(firstEntryOfNextSectorBuffer);
+                    return -1;
                 }
                 free(inodeBuffer);
                 free(inodeSegmentPointerToSector);
@@ -634,6 +642,13 @@ int DeleteEntryFromDirectory(int inodeNumber , int inodeSearch )
         if( Disk_Write(DATA_FIRST_BLOCK_INDEX + inodePointerToSectorNumber, sectorBuffer) == -1)
         {
             printf("Disk failed to write changed block\n");
+            free(inodeBuffer);
+            free(inodeSegmentPointerToSector);
+            free(sectorBuffer);
+            free(inodeSegmentPointerToNextSector);
+            free(nextSectorBuffer);
+            free(firstEntryOfNextSectorBuffer);
+            return -1;
         }
         
     }

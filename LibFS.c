@@ -115,32 +115,70 @@ int File_Create(char *file)
 
 int File_Open(char *file)
 {
-    printf("FS_Open\n");
-    return 0;
+    printf("FS_Open : %s\n", file);
+    int fd = openFileDescriptor(file);
+    if(fd != 0)
+        return -1;
+    printFileTable();
+    return fd;
 }
 
 int File_Read(int fd, void *buffer, int size)
 {
-
     printf("FS_Read\n");
-    return 0;
+    
+    // Check file is open or not
+    if ( isFileOpen(buffer)==-1)
+    {
+        osErrno=E_BAD_FD;
+        printf("File is not open\n");
+        return -1;
+    }
+    
+    int sizeRead = FileRead(int fd, char *buffer, int size)
+    if(sizeRead==-1)
+    {
+        printf("Error happen in Reading\n");
+        return -1;
+    }
+    return sizeRead;
 }
 
 int File_Write(int fd, void *buffer, int size)
 {
     printf("FS_Write\n");
+    
+    //
     return 0;
 }
 
 int File_Seek(int fd, int offset)
 {
     printf("FS_Seek\n");
+    if(offset > SizeOfFile(getInodePointerOfFileEntry(fd)))
+    {
+        E_SEEK_OUT_OF_BOUNDS = -1;
+        return -1;
+    }
+    if(isFileOpen(fd))
+    {
+        osErrno = E_BAD_FD;
+        return -1;
+    }
+    updateFilePointer(fd, offset);
     return 0;
 }
 
 int File_Close(int fd)
 {
     printf("FS_Close\n");
+    if(isFileOpen(fd))
+    {
+        osErrno = E_BAD_FD;
+        return -1;
+    }
+    if(removeFileTableEntry(fd) != 0)
+        return -1;
     return 0;
 }
 
