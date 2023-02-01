@@ -128,14 +128,14 @@ int File_Read(int fd, void *buffer, int size)
     printf("FS_Read\n");
     
     // Check file is open or not
-    if ( isFileOpen(buffer)==-1)
+    if ( isFileOpen(fd)==-1)
     {
         osErrno=E_BAD_FD;
         printf("File is not open\n");
         return -1;
     }
     
-    int sizeRead = FileRead(int fd, char *buffer, int size)
+    int sizeRead = FileRead( fd, buffer, size);
     if(sizeRead==-1)
     {
         printf("Error happen in Reading\n");
@@ -157,7 +157,7 @@ int File_Seek(int fd, int offset)
     printf("FS_Seek\n");
     if(offset > SizeOfFile(getInodePointerOfFileEntry(fd)))
     {
-        E_SEEK_OUT_OF_BOUNDS = -1;
+        osErrno= E_SEEK_OUT_OF_BOUNDS;
         return -1;
     }
     if(isFileOpen(fd))
@@ -165,7 +165,7 @@ int File_Seek(int fd, int offset)
         osErrno = E_BAD_FD;
         return -1;
     }
-    updateFilePointer(fd, offset);
+    updateFilePointerOfFileEntry(fd, offset);
     return 0;
 }
 
@@ -185,6 +185,36 @@ int File_Close(int fd)
 int File_Unlink(char *file)
 {
     printf("FS_Unlink\n");
+
+    // allocate memory for storing string...
+    char* array[128];
+    char myPath[256];
+
+    // make a copy of path to modify
+    strcpy(myPath, file);
+
+    // tokenize path and make array of path elements...
+    int i = BreakPathName(myPath, array);
+
+    int parent;
+    int current;
+
+    if(findLeafInodeNumber(myPath, array, i, &parent, &current, 0) != 0)
+        return -1;
+
+    printf("DeleteEntryFromDirectory( %d, %d ) ", parent, current);
+    DeleteEntryFromDirectory(parent, current);
+
+
+    int DataBlocksOccupied[30];
+    int j = DataBlocksOccupiedByFile(current, DataBlocksOccupied);
+
+    for (i = 0; i < j; i++)
+    {
+        ChangeDataBitmapStatus(DataBlocksOccupied[i], AVAILIBLE);
+    }
+
+    ChangeInodeBitmapStatus(current, AVAILIBLE);
     return 0;
 }
 
