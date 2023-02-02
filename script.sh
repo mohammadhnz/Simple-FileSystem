@@ -1,3 +1,5 @@
 make -f Make.libfs
 make -f Make.main
-sudo ./main disk.txt
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.
+./main disk.txt
+
